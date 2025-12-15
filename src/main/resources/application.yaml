@@ -1,0 +1,46 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: gateway-bff
+
+  # Отключаем автоконфигурацию БД
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
+
+  # Отключаем JPA
+  data:
+    jpa:
+      repositories:
+        enabled: false
+
+  rest:
+    client:
+      request:
+        connect-timeout: 5000
+        read-timeout: 10000
+
+# Настройки сервисов
+services:
+  admin:
+    url: http://localhost:8082
+  identity:
+    url: http://localhost:8080
+
+
+jwt:
+  secret: v98Td7wS3j5uFU
+
+# Логирование
+logging:
+  level:
+    Adesk_Gateway: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.client: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
