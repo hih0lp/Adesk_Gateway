@@ -26,12 +26,24 @@ public class GatewayController {
     private final AdminServiceClient adminServiceClient;
 
     // ==================== CHECKS SERVICE ====================
-    @PostMapping("/checks/create")
+    @PostMapping("/checks/create-category")
+    public ResponseEntity<?> createCheckCategory(@RequestBody Object body,
+                                         HttpServletRequest request) {
+        return forwardWithPermissionCheck(
+                "checks",
+                "http://localhost:8082/checks/create-category",
+                request,
+                body
+        );
+    }
+
+
+    @PostMapping("/checks/create-check")
     public ResponseEntity<?> createCheck(@RequestBody Object body,
                                          HttpServletRequest request) {
         return forwardWithPermissionCheck(
                 "checks",
-                "http://localhost:8082/api/checks/create",
+                "http://localhost:8082/checks/create-check",
                 request,
                 body
         );
@@ -54,7 +66,8 @@ public class GatewayController {
     @PostMapping("/company/invite-member")
     public ResponseEntity<?> inviteMember(@RequestBody Object body,
                                           HttpServletRequest request) {
-        return forwardWithoutToken(
+        return forwardWithPermissionCheck(
+                "admin",
                 "http://localhost:8082/company/invite-member",
                 request,
                 body
@@ -63,7 +76,7 @@ public class GatewayController {
 
     // ==================== PUBLIC ENDPOINTS ====================
 
-    @PostMapping("/company/accept-invite/{token}")
+    @GetMapping("/company/accept-invite/{token}")
     public ResponseEntity<?> acceptInvite(@PathVariable String token,
                                           HttpServletRequest request) {
         // Публичный эндпоинт - не проверяем права
