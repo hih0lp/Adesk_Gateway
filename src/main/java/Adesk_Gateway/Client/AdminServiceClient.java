@@ -23,7 +23,7 @@ public class AdminServiceClient {
 
     public PermissionResponse checkPermissions(PermissionCheckRequest request) {
         try {
-            String url = adminServiceUrl + "/permissions/check";
+            String url = adminServiceUrl + "/permissions/check-permissions";
 
             log.info("Calling admin service: {}", url);
             log.info("Request: email={}, company={}",

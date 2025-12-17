@@ -85,7 +85,7 @@ public class GatewayController {
                 null
         );
     }
-    
+
 
     // ==================== COMPANY SERVICE ====================
 
@@ -146,7 +146,7 @@ public class GatewayController {
         );
     }
 
-    @DeleteMapping("/company/delete-user-from-company/{companyId}/{userEmail}")
+    @DeleteMapping("/company/delete-user-from-company/{companyId}/{userEmail}") //
     public ResponseEntity<?> deleteUserFromCompanyAsync(@PathVariable String companyId,
                                                    @PathVariable String userEmail,
                                                    HttpServletRequest request){
@@ -157,7 +157,7 @@ public class GatewayController {
         );
     }
 
-    @GetMapping("/company/is-company-exist/{companyId}")
+    @GetMapping("/company/is-company-exist/{companyId}") //протестил
     public ResponseEntity<?> isCompanyExistAsync(@PathVariable String companyId, HttpServletRequest request){
         return forwardRequest(
                 "http://localhost:8082/company/is-company-exist/" + companyId,
@@ -168,17 +168,44 @@ public class GatewayController {
         );
     }
 
-    @PostMapping("/company/create-company/{userEmail}")
+    @PostMapping("/company/create-company/{userEmail}") //протестил
     public ResponseEntity<?> createCompanyAsync(@PathVariable String userEmail, @RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
+        return forwardRequest(
                 "http://localhost:8082/company/create-company/" + userEmail,
+                request,
+                body,
+                null,
+                false
+        );
+    }
+
+    //===================== PROJECT SERVICE ===========================
+    @PostMapping("/projects/create-category") //протестил
+    public ResponseEntity<?> createProjectCategoryAsync(@RequestBody Object body, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/create-category",
                 request,
                 body
         );
     }
 
+    @DeleteMapping("/projects/delete-category/{name}") //протестил
+    public ResponseEntity<?> deleteCategoryAsync(@PathVariable String name, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/delete-category/" + name,
+                request,
+                null
+        );
+    }
 
-
+    @PostMapping("/projects/create-project") //протестил
+    public ResponseEntity<?> createProjectAsync(@RequestBody Object body, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/create-project",
+                request,
+                body
+        );
+    }
 
 
     // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
