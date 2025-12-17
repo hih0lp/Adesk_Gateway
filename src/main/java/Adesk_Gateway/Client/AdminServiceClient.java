@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
@@ -21,7 +23,6 @@ public class AdminServiceClient {
 
     public PermissionResponse checkPermissions(PermissionCheckRequest request) {
         try {
-            // Исправь путь - добавь /api/
             String url = adminServiceUrl + "/permissions/check";
 
             log.info("Calling admin service: {}", url);
@@ -40,25 +41,26 @@ public class AdminServiceClient {
                     PermissionResponse.class
             );
 
-            if (response.getStatusCode() == HttpStatus.OK) {
-                log.info("Admin service response: allowed={}, permissions={}",
-                        response.getBody().isAllowed(),
-                        response.getBody().getPermissions());
-                return response.getBody();
-            } else {
-                log.error("Admin service returned status: {}", response.getStatusCode());
-            }
+            log.info("Admin service response: allowed={}, permissions={}",
+                    response.getBody().isAllowed(),
+                    response.getBody().getPermissions());
+            return response.getBody();
+
+        } catch (HttpClientErrorException e) {
+            // Admin Service вернул 4xx ошибку (400, 401, 403, 404)
+            log.warn("Admin service returned {}: {}", e.getStatusCode(), e.getMessage());
+            // Пробрасываем дальше - обработается в GatewayController
+            throw e;
+
+        } catch (HttpServerErrorException e) {
+            // Admin Service вернул 5xx ошибку (500, 502, 503)
+            log.error("Admin service error {}: {}", e.getStatusCode(), e.getMessage());
+            throw e;
 
         } catch (Exception e) {
+            // Ошибки сети, таймауты и т.д.
             log.error("Error calling admin service: {}", e.getMessage(), e);
+            throw new RuntimeException("Permission service unavailable: " + e.getMessage());
         }
-
-        // По умолчанию запрещаем доступ при ошибке
-        return PermissionResponse.builder()
-                .allowed(false)
-                .reason("Permission check service unavailable")
-                .email(request.getEmail())
-                .companyId(request.getCompanyId())
-                .build();
     }
 }

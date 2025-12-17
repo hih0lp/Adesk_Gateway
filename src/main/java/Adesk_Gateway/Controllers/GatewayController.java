@@ -6,8 +6,11 @@ import Adesk_Gateway.Services.TokenService;
 import Adesk_Gateway.Client.AdminServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -26,23 +29,34 @@ public class GatewayController {
     private final AdminServiceClient adminServiceClient;
 
     // ==================== CHECKS SERVICE ====================
-    @PostMapping("/checks/create-category")
-    public ResponseEntity<?> createCheckCategory(@RequestBody Object body,
+    @PostMapping("/checks/create-category") //протестил
+    public ResponseEntity<?> createCheckCategoryAsync(@RequestBody Object body,
                                          HttpServletRequest request) {
         return forwardWithPermissionCheck(
-                "checks",
+//                "checks",
                 "http://localhost:8082/checks/create-category",
                 request,
                 body
         );
     }
 
+    @DeleteMapping("/checks/delete-category") //протестил
+    public ResponseEntity<?> deleteCheckCategoryAsync(@RequestBody Object body,
+                                                      HttpServletRequest request) {
+        return forwardWithPermissionCheck(
+//                "checks",
+                "http://localhost:8082/checks/delete-category",
+                request,
+                body
+        );
+    }
 
-    @PostMapping("/checks/create-check")
-    public ResponseEntity<?> createCheck(@RequestBody Object body,
+
+    @PostMapping("/checks/create-check") //протестил
+    public ResponseEntity<?> createCheckAsync(@RequestBody Object body,
                                          HttpServletRequest request) {
         return forwardWithPermissionCheck(
-                "checks",
+//                "checks",
                 "http://localhost:8082/checks/create-check",
                 request,
                 body
@@ -50,34 +64,44 @@ public class GatewayController {
     }
 
 
-    @DeleteMapping("/checks/{id}")
-    public ResponseEntity<?> deleteCheck(@PathVariable Long id,
+    @GetMapping("/checks/get-categories-by-company-id/{companyId}") //протестил
+    public ResponseEntity<?> getCheckCategoriesByCompanyIdAsync(@PathVariable String companyId,
                                          HttpServletRequest request) {
         return forwardWithPermissionCheck(
-                "checks",
-                "http://localhost:8083/api/checks/" + id,
+//                "checks",
+                "http://localhost:8082/checks/get-categories-by-company-id/" + companyId,
                 request,
                 null
         );
     }
 
+    @GetMapping("/checks/get-checks-by-company-id/{companyId}") //протестил
+    public ResponseEntity<?> getChecksByCompanyIdAsync(@PathVariable String companyId,
+                                                                HttpServletRequest request) {
+        return forwardWithPermissionCheck(
+//                "checks",
+                "http://localhost:8082/checks/get-checks-by-company-id/" + companyId,
+                request,
+                null
+        );
+    }
+    
+
     // ==================== COMPANY SERVICE ====================
 
-    @PostMapping("/company/invite-member")
-    public ResponseEntity<?> inviteMember(@RequestBody Object body,
+    @PostMapping("/company/invite-member") //протестил
+    public ResponseEntity<?> inviteMemberAsync(@RequestBody Object body,
                                           HttpServletRequest request) {
         return forwardWithPermissionCheck(
-                "admin",
+//                "admin",
                 "http://localhost:8082/company/invite-member",
                 request,
                 body
         );
     }
 
-    // ==================== PUBLIC ENDPOINTS ====================
-
-    @GetMapping("/company/accept-invite/{token}")
-    public ResponseEntity<?> acceptInvite(@PathVariable String token,
+    @GetMapping("/company/accept-invite/{token}") //протестил
+    public ResponseEntity<?> acceptInviteAsync(@PathVariable String token,
                                           HttpServletRequest request) {
         // Публичный эндпоинт - не проверяем права
         return forwardRequest(
@@ -89,69 +113,148 @@ public class GatewayController {
         );
     }
 
+    @PutMapping("/company/edit-company-name") //протестил
+    public ResponseEntity<?> editCompanyNameAsync(@RequestBody Object body,
+                                                  HttpServletRequest request){
+
+        return forwardWithPermissionCheck(
+//                "admin",
+                "http://localhost:8082/company/edit-company-name",
+                request,
+                body);
+    }
+
+    @GetMapping("/company/get-user-companies-by-email/{userEmail}") //протестил
+    public ResponseEntity<?> getCompaniesByUserEmailAsync(@PathVariable String userEmail,
+                                                          HttpServletRequest request){
+        return forwardRequest(
+                "http://localhost:8082/company/get-user-companies-by-email/" + userEmail,
+                request,
+                null,
+                null,
+                false
+        );
+    }
+
+    @PutMapping("/company/edit-user-rights") //протестил
+    public ResponseEntity<?> editUserRightsAsync(@RequestBody Object body,
+                                                 HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8082/company/edit-user-rights",
+                request,
+                body
+        );
+    }
+
+    @DeleteMapping("/company/delete-user-from-company/{companyId}/{userEmail}")
+    public ResponseEntity<?> deleteUserFromCompanyAsync(@PathVariable String companyId,
+                                                   @PathVariable String userEmail,
+                                                   HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8082/company/delete-user-from-company/" + companyId + "/" + userEmail,
+                request,
+                null
+        );
+    }
+
+    @GetMapping("/company/is-company-exist/{companyId}")
+    public ResponseEntity<?> isCompanyExistAsync(@PathVariable String companyId, HttpServletRequest request){
+        return forwardRequest(
+                "http://localhost:8082/company/is-company-exist/" + companyId,
+                request,
+                null,
+                null,
+                false
+        );
+    }
+
+    @PostMapping("/company/create-company/{userEmail}")
+    public ResponseEntity<?> createCompanyAsync(@PathVariable String userEmail, @RequestBody Object body, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8082/company/create-company/" + userEmail,
+                request,
+                body
+        );
+    }
+
+
+
+
+
     // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
-    /**
-     * Метод с проверкой токена и прав доступа
-     */
-    private ResponseEntity<?> forwardWithPermissionCheck(String service, //имя сервиса
-                                                         String targetUrl, //куда отправляем
-                                                         HttpServletRequest request, //что получили от клиента
-                                                         Object body) { //тело запроса
+
+    private ResponseEntity<?> forwardWithPermissionCheck(String targetUrl,
+                                                         HttpServletRequest request,
+                                                         Object body) {
         try {
             String token = extractToken(request);
             if (token == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED) //если запрос с токеном и токена нет, тогда 401
-                        .body("Missing authorization token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Missing authorization token".getBytes());
             }
-
 
             String email = tokenService.extractUserEmail(token);
             String companyId = tokenService.extractCompanyId(token);
 
             if (email == null || companyId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("Invalid token data");
+                        .body("Invalid token data".getBytes());
             }
 
-            Map<String, String> requestParams = extractRequestParams(request);
-
-            // создание запроса на проверку прав
+            // Здесь может выбросить HttpClientErrorException если сервис прав вернул 400/500
             PermissionCheckRequest permissionRequest = PermissionCheckRequest.builder()
                     .email(email)
                     .companyId(companyId)
-                    .service(service)
                     .path(request.getRequestURI())
                     .method(request.getMethod())
-                    .requestParams(requestParams)
+                    .requestParams(extractRequestParams(request))
                     .build();
-
 
             PermissionResponse permissionResponse = adminServiceClient
                     .checkPermissions(permissionRequest);
 
             if (!permissionResponse.isAllowed()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("Access denied: " + permissionResponse.getReason());
+                        .body(("Access denied: " + permissionResponse.getReason()).getBytes());
             }
 
-            //кидаю запрос в нужный сервис
+            // Проксируем запрос (вернёт ответ с оригинальным статусом)
             return forwardRequest(targetUrl, request, body, permissionResponse, true);
 
+        } catch (HttpClientErrorException e) {
+            // Если сервис прав вернул 4xx ошибку - возвращаем её как есть
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsByteArray());
+
+        } catch (HttpServerErrorException e) {
+            // Если сервис прав вернул 5xx ошибку
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsByteArray());
+
         } catch (Exception e) {
-            log.error("Gateway error with token check: {}", e.getMessage(), e);
+            // Ошибки Gateway (токен, сеть и т.д.)
+            log.error("Gateway error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Gateway error: " + e.getMessage());
+                    .body(("Gateway error: " + e.getMessage()).getBytes());
         }
     }
+
 
     //без проверки токена - если методы не в компании или еще чето
     private ResponseEntity<?> forwardWithoutToken(String targetUrl,
                                                   HttpServletRequest request,
                                                   Object body) {
         try {
-            // Проксируем запрос без проверки токена и прав
             return forwardRequest(targetUrl, request, body, null, false);
+
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // Пробрасываем HTTP ошибки от сервиса
+            throw e;
 
         } catch (Exception e) {
             log.error("Gateway error without token check: {}", e.getMessage(), e);
@@ -160,17 +263,13 @@ public class GatewayController {
         }
     }
 
-    //в целом перенаправляет все запросы, удобно
     private ResponseEntity<?> forwardRequest(String targetUrl,
                                              HttpServletRequest request,
                                              Object body,
                                              PermissionResponse permissionResponse,
                                              boolean withToken) {
         try {
-            // 1. Создаем заголовки
             HttpHeaders headers = buildHeaders(request, permissionResponse, withToken);
-
-            // 2. Проксируем запрос
             HttpMethod method = HttpMethod.valueOf(request.getMethod());
             HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
@@ -181,16 +280,32 @@ public class GatewayController {
                     byte[].class
             );
 
-            // 3. Возвращаем ответ
             return ResponseEntity
                     .status(response.getStatusCode())
                     .headers(cleanHeaders(response.getHeaders()))
                     .body(response.getBody());
 
+        } catch (HttpClientErrorException e) {
+            // 4xx ошибки от целевого сервиса
+            log.warn("Target service returned {}: {}", e.getStatusCode(), e.getStatusText());
+            return ResponseEntity
+                    .status(e.getStatusCode())           // ← Оригинальный статус
+                    .headers(e.getResponseHeaders())     // ← Оригинальные заголовки
+                    .body(e.getResponseBodyAsByteArray()); // ← Оригинальное тело
+
+        } catch (HttpServerErrorException e) {
+            // 5xx ошибки от целевого сервиса
+            log.error("Target service error {}: {}", e.getStatusCode(), e.getStatusText());
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsByteArray());
+
         } catch (Exception e) {
-            log.error("Forward request error: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Forwarding error: " + e.getMessage());
+            // Ошибки Gateway (сеть, таймауты и т.д.)
+            log.error("Gateway forwarding error: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body("Gateway error: Service unavailable".getBytes());
         }
     }
 
