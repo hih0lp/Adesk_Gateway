@@ -189,12 +189,12 @@ public class GatewayController {
         );
     }
 
-    @DeleteMapping("/projects/delete-category/{name}") //протестил
-    public ResponseEntity<?> deleteCategoryAsync(@PathVariable String name, HttpServletRequest request){
+    @DeleteMapping("/projects/delete-category") //протестил
+    public ResponseEntity<?> deleteCategoryAsync(@RequestBody Object body, HttpServletRequest request){
         return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/delete-category/" + name,
+                "http://localhost:8084/projects/delete-category",
                 request,
-                null
+                body
         );
     }
 
@@ -202,6 +202,16 @@ public class GatewayController {
     public ResponseEntity<?> createProjectAsync(@RequestBody Object body, HttpServletRequest request){
         return forwardWithPermissionCheck(
                 "http://localhost:8084/projects/create-project",
+                request,
+                body
+        );
+    }
+
+
+    @DeleteMapping("/projects/delete-project") //протестил
+    public ResponseEntity<?> deleteProjectAsync(@RequestBody Object body, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/delete-project" ,
                 request,
                 body
         );
