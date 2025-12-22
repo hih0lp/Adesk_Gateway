@@ -1,14 +1,13 @@
 package Adesk_Gateway.Services;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Function;
+import java.util.Date;
 
 @Service
 @Slf4j
@@ -18,7 +17,7 @@ public class TokenService {
 
     public String extractUserEmail(String token) {
         try {
-            Claims claims = extractAllClaims(token);
+            Claims claims = extractAllClaimsIgnoringExpiration(token);
             String email = claims.get("email", String.class);
             log.info("Extracted email: {}", email);
             return email;
@@ -30,7 +29,7 @@ public class TokenService {
 
     public String extractCompanyId(String token) {
         try {
-            Claims claims = extractAllClaims(token);
+            Claims claims = extractAllClaimsIgnoringExpiration(token);
             String companyId = claims.get("company", String.class);
             log.info("Extracted companyId: {}", companyId);
             return companyId;
@@ -40,15 +39,53 @@ public class TokenService {
         }
     }
 
-    private Claims extractAllClaims(String token) {
+    // Проверяет, истек ли токен
+    public boolean isTokenExpired(String token) {
         try {
-            log.info("Parsing token with secret: {}", secret);
+            // Пробуем распарсить с проверкой expiration
+            extractAllClaimsWithExpirationCheck(token);
+            return false; // Не истек
+        } catch (ExpiredJwtException e) {
+            log.info("Token is expired: {}", e.getMessage());
+            return true; // Истек
+        } catch (Exception e) {
+            log.error("Error checking token expiration: {}", e.getMessage());
+            return true; // Другие ошибки считаем как истекший
+        }
+    }
+
+    // Извлекает claims даже из истекшего токена
+    private Claims extractAllClaimsIgnoringExpiration(String token) {
+        try {
+            log.info("Parsing token (ignoring expiration)");
 
             return Jwts.parser()
-                    .setSigningKey(getSigningKey())
+                    .verifyWith(getSigningKey())
+                    .unsecured()  // Отключаем проверку expiration
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+        } catch (Exception e) {
+            log.error("Error parsing token: {}", e.getMessage(), e);
+            throw new RuntimeException("Invalid token: " + e.getMessage());
+        }
+    }
+
+    // Извлекает с проверкой expiration (для определения истек ли токен)
+    private Claims extractAllClaimsWithExpirationCheck(String token) {
+        try {
+            log.info("Parsing token with expiration check");
+
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+        } catch (ExpiredJwtException e) {
+            log.info("Token expired: {}", e.getMessage());
+            throw e; // Пробрасываем дальше
         } catch (Exception e) {
             log.error("Error parsing token: {}", e.getMessage(), e);
             throw new RuntimeException("Invalid token: " + e.getMessage());

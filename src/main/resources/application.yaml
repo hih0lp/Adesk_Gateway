@@ -5,7 +5,7 @@ spring:
   application:
     name: gateway-bff
 
-  # Отключаем автоконфигурацию БД
+  ##убрал автоконфигурацию БД, а то ошибки ловлю, хз
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
@@ -39,7 +39,6 @@ services:
 jwt:
   secret: v98Td7wS3j5uFU
 
-# Логирование
 logging:
   level:
     Adesk_Gateway: DEBUG
@@ -47,3 +46,25 @@ logging:
     org.springframework.web.client: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - java.lang.RuntimeException
+          - java.io.IOException
+          - org.springframework.web.client.HttpServerErrorException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException
+
+    instances:
+      Gateway:  # Имя должно совпадать с аннотацией
+        baseConfig: default
