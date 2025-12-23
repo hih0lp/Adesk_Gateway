@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import java.util.Base64;
 
 @Service
 @Slf4j
@@ -54,18 +54,38 @@ public class TokenService {
         }
     }
 
-    // Извлекает claims даже из истекшего токена
+    // Извлекает claims даже из истекшего токена - РАБОЧАЯ ВЕРСИЯ!
     private Claims extractAllClaimsIgnoringExpiration(String token) {
         try {
             log.info("Parsing token (ignoring expiration)");
 
-            return Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .unsecured()  // Отключаем проверку expiration
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+            // ВАРИАНТ 1: Самый надежный - ручной парсинг Base64
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                throw new RuntimeException("Invalid JWT structure");
+            }
 
+            // Декодируем payload (вторая часть)
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+
+//            // Парсим JSON вручную или через Jackson
+//            return Jwts.parser()
+//                    .json(new JacksonDeserializer<>())
+//                    .build()
+//                    .parseClaimsJson(payload);
+
+//             ВАРИАНТ 2: Через JWT парсер с отключенной валидацией
+             return Jwts.parser()
+                     .verifyWith(getSigningKey())
+                     .unsecured()  // Отключаем ВСЕ проверки
+                     .build()
+                     .parseSignedClaims(token)
+                     .getPayload();
+
+        } catch (ExpiredJwtException e) {
+            // Даже если вылетело ExpiredJwtException - берем claims из исключения!
+            log.warn("Token expired, but extracting claims from exception");
+            return e.getClaims();
         } catch (Exception e) {
             log.error("Error parsing token: {}", e.getMessage(), e);
             throw new RuntimeException("Invalid token: " + e.getMessage());

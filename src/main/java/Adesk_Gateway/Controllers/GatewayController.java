@@ -2,7 +2,6 @@ package Adesk_Gateway.Controllers;
 
 import Adesk_Gateway.Models.PermissionCheckRequest;
 import Adesk_Gateway.Models.PermissionResponse;
-import Adesk_Gateway.Services.TokenRefreshService;
 import Adesk_Gateway.Services.TokenService;
 import Adesk_Gateway.Client.AdminServiceClient;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -31,7 +30,6 @@ public class GatewayController {
     private final RestTemplate restTemplate;
     private final TokenService tokenService;
     private final AdminServiceClient adminServiceClient;
-    private final TokenRefreshService tokenRefreshService;
 
     // ==================== CHECKS SERVICE ====================
     @PostMapping("/checks/create-category") //протестил
@@ -278,7 +276,51 @@ public class GatewayController {
         );
     }
 
-    /// TODO : СДЕЛАТЬ ЗАПРОС, КОТОРЫЙ БУДЕТ ОБНОВЛЯТЬ ТОКЕН ПОСЛЕ ИСТЕЧЕНИЯ ЕГО СРОКА ГОДНОСТИ
+    // ==================== REFRESH TOKEN =============================
+    @PostMapping("/refresh-token")
+    public ResponseEntity<String> refreshToken(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
+
+            if (token == null) {
+                return ResponseEntity.badRequest().body("No token provided");
+            }
+
+            String email = tokenService.extractUserEmail(token);
+            String companyId = tokenService.extractCompanyId(token);
+
+            if (email == null || companyId == null) {
+                return ResponseEntity.status(401).body("Invalid token");
+            }
+
+            log.info("Refreshing token for: {}, {}", email, companyId);
+
+            // Прямо передаем то, что вернул AdminService
+            String url = String.format(
+                    "http://localhost:8082/permissions/get-new-token/%s/%s",
+                    companyId, email
+            );
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url, HttpMethod.POST, null, String.class
+            );
+
+            // Возвращаем ТОЧНО ТО ЖЕ, что вернул AdminService
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .body(response.getBody());
+
+        } catch (Exception e) {
+            log.error("Error: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body("Server error: " + e.getMessage());
+        }
+    }
+
+
+    /// TODO : СДЕЛАТЬ ЗАПРОС, КОТОРЫЙ БУДЕТ ОБНОВЛЯТЬ ТОКЕН ПОСЛЕ ЕГО ИСТЧЕНИЯ
 
     // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
@@ -293,10 +335,7 @@ public class GatewayController {
                         .body("Missing authorization token".getBytes());
             }
 
-            // 1. Проверяем, истек ли токен
-            boolean isTokenExpired = tokenService.isTokenExpired(token);
-
-            // 2. Извлекаем данные (даже из истекшего токена)
+            // ПРОСТО извлекаем данные (даже из истекшего токена)
             String email = tokenService.extractUserEmail(token);
             String companyId = tokenService.extractCompanyId(token);
 
@@ -305,30 +344,7 @@ public class GatewayController {
                         .body("Invalid token data".getBytes());
             }
 
-            // 3. Если токен истек - пытаемся обновить
-            String newToken = null;
-            if (isTokenExpired) {
-                log.info("Token expired for user: {}, company: {}. Attempting refresh...",
-                        email, companyId);
-
-                newToken = tokenRefreshService.refreshCompanyToken(email, companyId);
-
-                if (newToken != null) {
-                    log.info("Token refreshed successfully. New token will be used for permission check");
-                    // Используем новый токен для проверки прав
-                    token = newToken;
-                } else {
-                    log.warn("Failed to refresh token. Returning 401 with refresh hint");
-                    // Возвращаем 401 с указанием, что нужно обновить токен
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                            .header("X-Token-Expired", "true")
-                            .header("X-Token-Refresh-Required", "true")
-                            .header("X-Refresh-Endpoint", "/api/gateway/refresh-token")
-                            .body("Token expired. Please refresh your token.".getBytes());
-                }
-            }
-
-            // 4. Проверяем права с актуальным токеном (новым или старым)
+            // Проверяем права
             PermissionCheckRequest permissionRequest = PermissionCheckRequest.builder()
                     .email(email)
                     .companyId(companyId)
@@ -345,34 +361,8 @@ public class GatewayController {
                         .body(("Access denied: " + permissionResponse.getReason()).getBytes());
             }
 
-            // 5. Проксируем запрос
-            ResponseEntity<?> forwardedResponse = forwardRequest(targetUrl, request, body, permissionResponse, true);
-
-            // 6. Если был обновлен токен, добавляем его в заголовки ответа
-            if (newToken != null && forwardedResponse.getStatusCode().is2xxSuccessful()) {
-                HttpHeaders newHeaders = new HttpHeaders();
-                forwardedResponse.getHeaders().forEach(newHeaders::addAll);
-                newHeaders.add("X-New-Access-Token", newToken); //новый токен аксес
-                newHeaders.add("X-Token-Refreshed", "true"); //пометка, что токен рефрешнут был
-
-                return ResponseEntity.status(forwardedResponse.getStatusCode())
-                        .headers(newHeaders)
-                        .body(forwardedResponse.getBody());
-            }
-
-            return forwardedResponse;
-
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity
-                    .status(e.getStatusCode())
-                    .headers(e.getResponseHeaders())
-                    .body(e.getResponseBodyAsByteArray());
-
-        } catch (HttpServerErrorException e) {
-            return ResponseEntity
-                    .status(e.getStatusCode())
-                    .headers(e.getResponseHeaders())
-                    .body(e.getResponseBodyAsByteArray());
+            // Проксируем запрос
+            return forwardRequest(targetUrl, request, body, permissionResponse, true);
 
         } catch (Exception e) {
             log.error("Gateway error: {}", e.getMessage(), e);
@@ -381,99 +371,6 @@ public class GatewayController {
         }
     }
 
-
-    // ==================== TOKEN REFRESH ENDPOINT ====================
-
-    @PostMapping("/refresh-token") //это просто рефреш
-    public ResponseEntity<?> refreshTokenEndpoint(@RequestHeader(value = "Authorization", required = false) String authHeader,
-                                                  @RequestParam(value = "companyId", required = false) String companyIdParam) {
-        try {
-            String token = null;
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7);
-            }
-
-            String email = null;
-            String companyId = companyIdParam;
-
-            // Если есть токен - извлекаем данные из него
-            if (token != null) {
-                email = tokenService.extractUserEmail(token);
-                if (companyId == null) {
-                    companyId = tokenService.extractCompanyId(token);
-                }
-            }
-
-            // Если не удалось получить email и companyId
-            if (email == null || companyId == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Cannot determine user and company. Please provide Authorization header or email and companyId parameters.".getBytes());
-            }
-
-            log.info("Explicit token refresh requested for user: {}, company: {}", email, companyId);
-
-            String newToken = tokenRefreshService.refreshCompanyToken(email, companyId);
-
-            if (newToken != null) {
-                return ResponseEntity.ok()
-                        .header("Authorization", "Bearer " + newToken)
-                        .header("X-Token-Refreshed", "true")
-                        .body(("Token refreshed successfully for company: " + companyId).getBytes());
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("Failed to refresh token. Please login again.".getBytes());
-            }
-
-        } catch (Exception e) {
-            log.error("Error in refresh-token endpoint: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(("Error refreshing token: " + e.getMessage()).getBytes());
-        }
-    }
-
-
-    @PostMapping("/refresh-token/with-body") // рефреш с телом запроса
-    public ResponseEntity<?> refreshTokenWithBody(@RequestBody(required = false) Map<String, String> requestBody) {
-        try {
-            String email = requestBody != null ? requestBody.get("email") : null;
-            String companyId = requestBody != null ? requestBody.get("companyId") : null;
-            String token = requestBody != null ? requestBody.get("token") : null;
-
-            // Если передан токен - извлекаем данные из него
-            if (token != null && (email == null || companyId == null)) {
-                email = tokenService.extractUserEmail(token);
-                companyId = tokenService.extractCompanyId(token);
-            }
-
-            if (email == null || companyId == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Required parameters: email and companyId, or a valid token".getBytes());
-            }
-
-            log.info("Token refresh via body for user: {}, company: {}", email, companyId);
-
-            String newToken = tokenRefreshService.refreshCompanyToken(email, companyId);
-
-            if (newToken != null) {
-                Map<String, String> response = new HashMap<>();
-                response.put("access_token", newToken);
-                response.put("token_type", "Bearer");
-                response.put("message", "Token refreshed successfully");
-
-                return ResponseEntity.ok()
-                        .header("Authorization", "Bearer " + newToken)
-                        .body(response.toString().getBytes());
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("Failed to refresh token".getBytes());
-            }
-
-        } catch (Exception e) {
-            log.error("Error in refresh-token with body: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(("Error: " + e.getMessage()).getBytes());
-        }
-    }
 
     //без проверки токена - если методы не в компании или еще чето
     private ResponseEntity<?> forwardWithoutToken(String targetUrl,
@@ -563,8 +460,10 @@ public class GatewayController {
                         String.join(",", permissionResponse.getPermissions()));
             }
 
+            // Добавляем флаг, что запрос аутентифицирован
             headers.add("X-Authenticated", "true");
         } else {
+            // Для запросов без токена
             headers.add("X-Authenticated", "false");
         }
 
@@ -613,6 +512,3 @@ public class GatewayController {
 /// "X-Company-Id" - айди компании
 /// "X-User-Permissions" - права пользователя через запятую, только те права, которые есть
 /// "X-Authenticated" - публичный ли эндпоинт, точнее, вернулся ли он через гейтвей
-
-
-/// TODO - АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ТОКЕНА (ВЫКИДЫВАЕТСЯ В ЗАГОЛОВКАХ)
