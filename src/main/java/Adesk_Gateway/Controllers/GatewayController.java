@@ -222,21 +222,59 @@ public class GatewayController {
 
     // ==================== OPERATION SERVICE ==========================
 
-    @PostMapping("/operations/create-operation")
+    @PostMapping("/requests/create-request")
     public ResponseEntity<?> createOperationAsync(@RequestBody Object body, HttpServletRequest request){
         return forwardWithPermissionCheck(
-                "http://localhost:8087/operations/create-operation",
+                "http://localhost:8087/requests/create-request",
                 request,
                 body
         );
     }
 
-    @DeleteMapping("/operations/delete-operations")
+    @DeleteMapping("/requests/delete-requests")
     public ResponseEntity<?> deleteOperationsAsync(@RequestBody Object body, HttpServletRequest request){
         return forwardWithPermissionCheck(
-                "http://localhost:8087/operations/delete-operation",
+                "http://localhost:8087/requests/delete-request",
                 request,
                 body
+        );
+    }
+
+    @GetMapping("/requests/get-requests")
+    public ResponseEntity<?> getRequestsByProjectNameAsync(HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-requests",
+                request,
+                null
+        );
+    }
+
+    @PostMapping("/requests/approve-request/{requestId}")
+    public ResponseEntity<?> approveRequestAsync(@PathVariable String requestId, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/approve-request/" + requestId,
+                request,
+                null
+        );
+    }
+
+
+    @PostMapping("/requests/disapprove-request/{requestId}")
+    public ResponseEntity<?> disapproveRequestAsync(@PathVariable String requestId, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/disapprove-request/" + requestId,
+                request,
+                null
+        );
+    }
+
+
+    @GetMapping("/requests/get-requests-order-by-date/{projectName}")
+    public ResponseEntity<?> getRequestsOrderByDate(@PathVariable String projectName, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-requests-order-by-date/" + projectName,
+                request,
+                null
         );
     }
 
