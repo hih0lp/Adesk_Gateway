@@ -210,6 +210,15 @@ public class GatewayController {
         );
     }
 
+    @GetMapping("/projects/get-company-projects")
+    public ResponseEntity<?> getCompanyProjects(HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/get-company-projects",
+                request,
+                null
+        );
+    }
+
 
     @DeleteMapping("/projects/delete-project") //протестил
     public ResponseEntity<?> deleteProjectAsync(@RequestBody Object body, HttpServletRequest request){
@@ -234,7 +243,7 @@ public class GatewayController {
     @DeleteMapping("/requests/delete-requests")
     public ResponseEntity<?> deleteOperationsAsync(@RequestBody Object body, HttpServletRequest request){
         return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/delete-request",
+                "http://localhost:8087/requests/delete-requests",
                 request,
                 body
         );
@@ -269,10 +278,46 @@ public class GatewayController {
     }
 
 
-    @GetMapping("/requests/get-requests-order-by-date/{projectName}")
-    public ResponseEntity<?> getRequestsOrderByDate(@PathVariable String projectName, HttpServletRequest request){
+    @GetMapping("/requests/get-requests-order-by-date-today")
+    public ResponseEntity<?> getRequestsOrderByDateToday(HttpServletRequest request){
         return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests-order-by-date/" + projectName,
+                "http://localhost:8087/requests/get-requests-order-by-date-today",
+                request,
+                null
+        );
+    }
+
+    @GetMapping("/requests/get-requests-order-by-date-week")
+    public ResponseEntity<?> getRequestsOrderByDateWeek(HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-requests-order-by-date-week",
+                request,
+                null
+        );
+    }
+
+    @PostMapping("/requests/get-requests-order-by-dates")
+    public ResponseEntity<?> getRequestsOrderByDates(@RequestBody Object body, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-requests-order-by-dates",
+                request,
+                body
+        );
+    }
+
+    @GetMapping("/requests/get-requests-order-by-date-quarter/{numberOfQuarter}")
+    public ResponseEntity<?> getRequestsOrderByQuarter(@PathVariable String numberOfQuarter, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-requests-order-by-date-quarter/" + numberOfQuarter,
+                request,
+                null
+        );
+    }
+
+    @GetMapping("/requests/get-requests-order-by-date-year")
+    public ResponseEntity<?> getRequestsOrderByYear(HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-requests-order-by-date-year",
                 request,
                 null
         );
@@ -313,6 +358,12 @@ public class GatewayController {
                 false
         );
     }
+    // ===================
+
+
+
+
+
 
     // ==================== REFRESH TOKEN =============================
     @PostMapping("/refresh-token")
