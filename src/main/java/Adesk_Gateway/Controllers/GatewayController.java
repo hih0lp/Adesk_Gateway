@@ -192,6 +192,15 @@ public class GatewayController {
         );
     }
 
+    @GetMapping("/projects/get-responsible-projects/{responsibleLogin}")
+    public ResponseEntity<?> getResponsibleProjects(@PathVariable String responsibleLogin, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/get-responsible-projects/" + responsibleLogin,
+                request,
+                null
+        );
+    }
+
     @DeleteMapping("/projects/delete-category") //протестил
     public ResponseEntity<?> deleteCategoryAsync(@RequestBody Object body, HttpServletRequest request){
         return forwardWithPermissionCheck(
@@ -219,6 +228,16 @@ public class GatewayController {
         );
     }
 
+    @GetMapping("/projects/get-project-categories")
+    public ResponseEntity<?> getCompanyProjectsCategories(HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/get-project-categories",
+                request,
+                null
+        );
+    }
+
+
 
     @DeleteMapping("/projects/delete-project") //протестил
     public ResponseEntity<?> deleteProjectAsync(@RequestBody Object body, HttpServletRequest request){
@@ -237,6 +256,15 @@ public class GatewayController {
                 "http://localhost:8087/requests/create-request",
                 request,
                 body
+        );
+    }
+
+    @GetMapping("/requests/get-project-statistic/{projectName}")
+    public ResponseEntity<?> getProjectStatistic(@PathVariable String projectName, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-project-statistic/" + projectName,
+                request,
+                null
         );
     }
 
