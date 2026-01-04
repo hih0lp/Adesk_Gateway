@@ -192,6 +192,24 @@ public class GatewayController {
         );
     }
 
+    @GetMapping("/projects/get-projects-by-date")
+    public ResponseEntity<?> getProjectsOrderByDateAsync(HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8084/projects/get-projects-by-date",
+                request,
+                null
+        );
+    }
+
+    @GetMapping("/projects/get-projects-order-by-char")
+    public ResponseEntity<?> getProjectsOrderByCharAsync(HttpServletRequest request){
+        return  forwardWithPermissionCheck(
+                "http://localhost:8084/projects/get-projects-order-by-char",
+                request,
+                null
+        );
+    }
+
     @GetMapping("/projects/get-responsible-projects/{responsibleLogin}")
     public ResponseEntity<?> getResponsibleProjects(@PathVariable String responsibleLogin, HttpServletRequest request){
         return forwardWithPermissionCheck(
@@ -258,6 +276,16 @@ public class GatewayController {
                 body
         );
     }
+
+    @GetMapping("/requests/get-operations-by-project/{projectName}")
+    public ResponseEntity<?> getProjectOperationsAsync(@PathVariable String projectName, HttpServletRequest request){
+        return forwardWithPermissionCheck(
+                "http://localhost:8087/requests/get-operations-by-project/" + projectName,
+                request,
+                null
+        );
+    }
+
 
     @GetMapping("/requests/get-project-statistic/{projectName}")
     public ResponseEntity<?> getProjectStatistic(@PathVariable String projectName, HttpServletRequest request){
