@@ -255,7 +255,14 @@ public class GatewayController {
         );
     }
 
-
+//    @GetMapping("/projects/get-company-projects")
+//    public ResponseEntity<?> getCompanyProjectsAsync(HttpServletRequest request){
+//        return forwardWithPermissionCheck(
+//                "http://localhost:8084/projects/get-company-projects",
+//                request,
+//                null
+//        );
+//    }
 
     @DeleteMapping("/projects/delete-project") //протестил
     public ResponseEntity<?> deleteProjectAsync(@RequestBody Object body, HttpServletRequest request){
