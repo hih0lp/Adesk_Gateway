@@ -1,0 +1,7 @@
+.git
+.gitignore
+*.log
+target/  # для Maven
+build/   # для Gradle
+.idea
+*.iml

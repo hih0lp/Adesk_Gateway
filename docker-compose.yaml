@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  gateway:
+    image: adesk_gateway
+    ports:
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    environment:
+      SERVER_PORT: ${GATEWAY_PORT}
+    depends_on:
+      - admin
+      - operation
+      - counterparty
+      - project
+      - identity
+#      - postgres
+#      - redis
+
+  admin:
+    image: adesk_admin_service
+    ports:
+      - "${ADMIN_PORT}:${ADMIN_PORT}"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_REDIS_HOST: ${SPRING_REDIS_HOST}
+      SPRING_REDIS_PORT: ${SPRING_REDIS_PORT}
+      SERVER_PORT: ${ADMIN_PORT}
+#    depends_on:
+#      - postgres
+#      - redis
+
+  operation:
+    image: adesk_operation_service
+    ports:
+      - "${OPERATION_PORT}:${OPERATION_PORT}"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SERVER_PORT: ${OPERATION_PORT}
+
+  counterparty:
+    image: adesk_counterparty_service
+    ports:
+      - "${COUNTERPARTY_PORT}:${COUNTERPARTY_PORT}"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SERVER_PORT: ${COUNTERPARTY_PORT}
+#    depends_on:
+#      - postgres
+
+  project:
+    image: adesk_project_service
+    ports:
+      - "${PROJECT_PORT}:${PROJECT_PORT}"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SERVER_PORT: ${PROJECT_PORT}
+#    depends_on:
+#      - postgres
+
+  identity:
+    image: adesk_identity_service
+    ports:
+      - "${IDENTITY_PORT}:${IDENTITY_PORT}"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SERVER_PORT: ${IDENTITY_PORT}
+#    depends_on:
+#      - postgres
+
+#  postgres:
+#    image: postgres:15-alpine
+#    environment:
+#      POSTGRES_DB: ${POSTGRES_DB}
+#      POSTGRES_USER: ${POSTGRES_USER}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#    ports:
+#      - "${POSTGRES_PORT}:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+
+#  redis:
+#    image: redis:7-alpine
+#    ports:
+#      - "${REDIS_PORT}:6379"
+
+volumes:
+  postgres_data:
