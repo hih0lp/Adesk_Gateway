@@ -18,13 +18,6 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Без сессий
                 .authorizeHttpRequests(auth -> auth
-                        // Публичные эндпоинты
-//                        .requestMatchers("/api/test/**").permitAll()
-//                        .requestMatchers("/api/gateway/company/accept-invite/**").permitAll()
-//                        .requestMatchers("/actuator/health").permitAll()
-//                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-
-                        // Все остальные требуют аутентификации
                         .anyRequest().permitAll()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable()); // Отключаем Basic Auth

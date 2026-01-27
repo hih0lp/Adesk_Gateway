@@ -5,10 +5,9 @@ import Adesk_Gateway.Models.PermissionResponse;
 import Adesk_Gateway.Services.TokenService;
 import Adesk_Gateway.Client.AdminServiceClient;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import jakarta.servlet.http.HttpServlet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
@@ -24,409 +23,267 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/gateway")
 @RequiredArgsConstructor
-//@CircuitBreaker(name = "Gateway", fallbackMethod = "globalFallback")
 public class GatewayController {
 
     private final RestTemplate restTemplate;
     private final TokenService tokenService;
     private final AdminServiceClient adminServiceClient;
 
+
+    @Value("${SERVICE_ADMIN_URL}")
+    private String adminServiceUrl;
+
+    @Value("${SERVICE_IDENTITY_URL}")
+    private String identityServiceUrl;
+
+    @Value("${SERVICE_PROJECT_URL}")
+    private String projectServiceUrl;
+
+    @Value("${SERVICE_OPERATION_URL}")
+    private String operationServiceUrl;
+
+    @Value("${SERVICE_COUNTERPARTY_URL}")
+    private String counterpartyServiceUrl;
+
+
     // ==================== CHECKS SERVICE ====================
-    @PostMapping("/checks/create-category") //протестил
+    @PostMapping("/checks/create-category")
     public ResponseEntity<?> createCheckCategoryAsync(@RequestBody Object body,
-                                         HttpServletRequest request) {
-        return forwardWithPermissionCheck(
-//                "checks",
-                "http://localhost:8082/checks/create-category",
-                request,
-                body
-        );
+                                                      HttpServletRequest request) {
+        String url = adminServiceUrl + "/checks/create-category";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-    @DeleteMapping("/checks/delete-category") //протестил
+    @DeleteMapping("/checks/delete-category")
     public ResponseEntity<?> deleteCheckCategoryAsync(@RequestBody Object body,
                                                       HttpServletRequest request) {
-        return forwardWithPermissionCheck(
-//                "checks",
-                "http://localhost:8082/checks/delete-category",
-                request,
-                body
-        );
+        String url = adminServiceUrl + "/checks/delete-category";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-
-    @PostMapping("/checks/create-check") //протестил
+    @PostMapping("/checks/create-check")
     public ResponseEntity<?> createCheckAsync(@RequestBody Object body,
-                                         HttpServletRequest request) {
-        return forwardWithPermissionCheck(
-//                "checks",
-                "http://localhost:8082/checks/create-check",
-                request,
-                body
-        );
+                                              HttpServletRequest request) {
+        String url = adminServiceUrl + "/checks/create-check";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-
-    @GetMapping("/checks/get-categories-by-company-id/{companyId}") //протестил
+    @GetMapping("/checks/get-categories-by-company-id/{companyId}")
     public ResponseEntity<?> getCheckCategoriesByCompanyIdAsync(@PathVariable String companyId,
-                                         HttpServletRequest request) {
-        return forwardWithPermissionCheck(
-//                "checks",
-                "http://localhost:8082/checks/get-categories-by-company-id/" + companyId,
-                request,
-                null
-        );
-    }
-
-    @GetMapping("/checks/get-checks-by-company-id/{companyId}") //протестил
-    public ResponseEntity<?> getChecksByCompanyIdAsync(@PathVariable String companyId,
                                                                 HttpServletRequest request) {
-        return forwardWithPermissionCheck(
-//                "checks",
-                "http://localhost:8082/checks/get-checks-by-company-id/" + companyId,
-                request,
-                null
-        );
+        String url = adminServiceUrl + "/checks/get-categories-by-company-id/" + companyId;
+        return forwardWithPermissionCheck(url, request, null);
     }
 
+    @GetMapping("/checks/get-checks-by-company-id/{companyId}")
+    public ResponseEntity<?> getChecksByCompanyIdAsync(@PathVariable String companyId,
+                                                       HttpServletRequest request) {
+        String url = adminServiceUrl + "/checks/get-checks-by-company-id/" + companyId;
+        return forwardWithPermissionCheck(url, request, null);
+    }
 
     // ==================== COMPANY SERVICE ====================
-
-    @PostMapping("/company/invite-member") //протестил
+    @PostMapping("/company/invite-member")
     public ResponseEntity<?> inviteMemberAsync(@RequestBody Object body,
-                                          HttpServletRequest request) {
-        return forwardWithPermissionCheck(
-//                "admin",
-                "http://localhost:8082/company/invite-member",
-                request,
-                body
-        );
+                                               HttpServletRequest request) {
+        String url = adminServiceUrl + "/company/invite-member";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-    @GetMapping("/company/accept-invite/{token}") //протестил
+    @GetMapping("/company/accept-invite/{token}")
     public ResponseEntity<?> acceptInviteAsync(@PathVariable String token,
-                                          HttpServletRequest request) {
-        // Публичный эндпоинт - не проверяем права
-        return forwardRequest(
-                "http://localhost:8082/company/accept-invite/" + token,
-                request,
-                null,
-                null,
-                false  // Без токена
-        );
+                                               HttpServletRequest request) {
+        String url = adminServiceUrl + "/company/accept-invite/" + token;
+        return forwardRequest(url, request, null, null, false);
     }
 
-    @PutMapping("/company/edit-company-name") //протестил
+    @PutMapping("/company/edit-company-name")
     public ResponseEntity<?> editCompanyNameAsync(@RequestBody Object body,
                                                   HttpServletRequest request){
-
-        return forwardWithPermissionCheck(
-//                "admin",
-                "http://localhost:8082/company/edit-company-name",
-                request,
-                body);
+        String url = adminServiceUrl + "/company/edit-company-name";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-    @GetMapping("/company/get-user-companies-by-email/{userEmail}") //протестил
+    @GetMapping("/company/get-user-companies-by-email/{userEmail}")
     public ResponseEntity<?> getCompaniesByUserEmailAsync(@PathVariable String userEmail,
                                                           HttpServletRequest request){
-        return forwardRequest(
-                "http://localhost:8082/company/get-user-companies-by-email/" + userEmail,
-                request,
-                null,
-                null,
-                false
-        );
+        String url = adminServiceUrl + "/company/get-user-companies-by-email/" + userEmail;
+        return forwardRequest(url, request, null, null, false);
     }
 
-    @PutMapping("/company/edit-user-rights") //протестил
+    @PutMapping("/company/edit-user-rights")
     public ResponseEntity<?> editUserRightsAsync(@RequestBody Object body,
                                                  HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8082/company/edit-user-rights",
-                request,
-                body
-        );
+        String url = adminServiceUrl + "/company/edit-user-rights";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-    @DeleteMapping("/company/delete-user-from-company/{companyId}/{userEmail}") //
+    @DeleteMapping("/company/delete-user-from-company/{companyId}/{userEmail}")
     public ResponseEntity<?> deleteUserFromCompanyAsync(@PathVariable String companyId,
-                                                   @PathVariable String userEmail,
-                                                   HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8082/company/delete-user-from-company/" + companyId + "/" + userEmail,
-                request,
-                null
-        );
+                                                        @PathVariable String userEmail,
+                                                        HttpServletRequest request){
+        String url = adminServiceUrl + "/company/delete-user-from-company/" + companyId + "/" + userEmail;
+        return forwardWithPermissionCheck(url, request, null);
     }
 
-    @GetMapping("/company/is-company-exist/{companyId}") //протестил
+    @GetMapping("/company/is-company-exist/{companyId}")
     public ResponseEntity<?> isCompanyExistAsync(@PathVariable String companyId, HttpServletRequest request){
-        return forwardRequest(
-                "http://localhost:8082/company/is-company-exist/" + companyId,
-                request,
-                null,
-                null,
-                false
-        );
+        String url = adminServiceUrl + "/company/is-company-exist/" + companyId;
+        return forwardRequest(url, request, null, null, false);
     }
 
-    @PostMapping("/company/create-company/{userEmail}") //протестил
+    @PostMapping("/company/create-company/{userEmail}")
     public ResponseEntity<?> createCompanyAsync(@PathVariable String userEmail, @RequestBody Object body, HttpServletRequest request){
-        return forwardRequest(
-                "http://localhost:8082/company/create-company/" + userEmail,
-                request,
-                body,
-                null,
-                false
-        );
+        String url = adminServiceUrl + "/company/create-company/" + userEmail;
+        return forwardRequest(url, request, body, null, false);
     }
 
-    //===================== PROJECT SERVICE ===========================
-    @PostMapping("/projects/create-category") //протестил
+    // ==================== PROJECT SERVICE ===========================
+    @PostMapping("/projects/create-category")
     public ResponseEntity<?> createProjectCategoryAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/create-category",
-                request,
-                body
-        );
+        String url = projectServiceUrl + "/projects/create-category";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
     @GetMapping("/projects/get-projects-by-date")
     public ResponseEntity<?> getProjectsOrderByDateAsync(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/get-projects-by-date",
-                request,
-                null
-        );
+        String url = projectServiceUrl + "/projects/get-projects-by-date";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @GetMapping("/projects/get-projects-order-by-char")
     public ResponseEntity<?> getProjectsOrderByCharAsync(HttpServletRequest request){
-        return  forwardWithPermissionCheck(
-                "http://localhost:8084/projects/get-projects-order-by-char",
-                request,
-                null
-        );
+        String url = projectServiceUrl + "/projects/get-projects-order-by-char";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @GetMapping("/projects/get-responsible-projects/{responsibleLogin}")
     public ResponseEntity<?> getResponsibleProjects(@PathVariable String responsibleLogin, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/get-responsible-projects/" + responsibleLogin,
-                request,
-                null
-        );
+        String url = projectServiceUrl + "/projects/get-responsible-projects/" + responsibleLogin;
+        return forwardWithPermissionCheck(url, request, null);
     }
 
-    @DeleteMapping("/projects/delete-category") //протестил
+    @DeleteMapping("/projects/delete-category")
     public ResponseEntity<?> deleteCategoryAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/delete-category",
-                request,
-                body
-        );
+        String url = projectServiceUrl + "/projects/delete-category";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
-    @PostMapping("/projects/create-project") //протестил
+    @PostMapping("/projects/create-project")
     public ResponseEntity<?> createProjectAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/create-project",
-                request,
-                body
-        );
+        String url = projectServiceUrl + "/projects/create-project";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
     @GetMapping("/projects/get-company-projects")
     public ResponseEntity<?> getCompanyProjects(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/get-company-projects",
-                request,
-                null
-        );
+        String url = projectServiceUrl + "/projects/get-company-projects";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @GetMapping("/projects/get-project-categories")
     public ResponseEntity<?> getCompanyProjectsCategories(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/get-project-categories",
-                request,
-                null
-        );
+        String url = projectServiceUrl + "/projects/get-project-categories";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
-//    @GetMapping("/projects/get-company-projects")
-//    public ResponseEntity<?> getCompanyProjectsAsync(HttpServletRequest request){
-//        return forwardWithPermissionCheck(
-//                "http://localhost:8084/projects/get-company-projects",
-//                request,
-//                null
-//        );
-//    }
-
-    @DeleteMapping("/projects/delete-project") //протестил
+    @DeleteMapping("/projects/delete-project")
     public ResponseEntity<?> deleteProjectAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8084/projects/delete-project" ,
-                request,
-                body
-        );
+        String url = projectServiceUrl + "/projects/delete-project";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
     // ==================== OPERATION SERVICE ==========================
-
     @PostMapping("/requests/create-request")
     public ResponseEntity<?> createOperationAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/create-request",
-                request,
-                body
-        );
+        String url = operationServiceUrl + "/requests/create-request";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
     @GetMapping("/requests/get-operations-by-project/{projectName}")
     public ResponseEntity<?> getProjectOperationsAsync(@PathVariable String projectName, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-operations-by-project/" + projectName,
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-operations-by-project/" + projectName;
+        return forwardWithPermissionCheck(url, request, null);
     }
-
 
     @GetMapping("/requests/get-project-statistic/{projectName}")
     public ResponseEntity<?> getProjectStatistic(@PathVariable String projectName, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-project-statistic/" + projectName,
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-project-statistic/" + projectName;
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @DeleteMapping("/requests/delete-requests")
     public ResponseEntity<?> deleteOperationsAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/delete-requests",
-                request,
-                body
-        );
+        String url = operationServiceUrl + "/requests/delete-requests";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
     @GetMapping("/requests/get-requests")
     public ResponseEntity<?> getRequestsByProjectNameAsync(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests",
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-requests";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @PostMapping("/requests/approve-request/{requestId}")
     public ResponseEntity<?> approveRequestAsync(@PathVariable String requestId, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/approve-request/" + requestId,
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/approve-request/" + requestId;
+        return forwardWithPermissionCheck(url, request, null);
     }
-
 
     @PostMapping("/requests/disapprove-request/{requestId}")
     public ResponseEntity<?> disapproveRequestAsync(@PathVariable String requestId, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/disapprove-request/" + requestId,
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/disapprove-request/" + requestId;
+        return forwardWithPermissionCheck(url, request, null);
     }
-
 
     @GetMapping("/requests/get-requests-order-by-date-today")
     public ResponseEntity<?> getRequestsOrderByDateToday(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests-order-by-date-today",
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-requests-order-by-date-today";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @GetMapping("/requests/get-requests-order-by-date-week")
     public ResponseEntity<?> getRequestsOrderByDateWeek(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests-order-by-date-week",
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-requests-order-by-date-week";
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @PostMapping("/requests/get-requests-order-by-dates")
     public ResponseEntity<?> getRequestsOrderByDates(@RequestBody Object body, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests-order-by-dates",
-                request,
-                body
-        );
+        String url = operationServiceUrl + "/requests/get-requests-order-by-dates";
+        return forwardWithPermissionCheck(url, request, body);
     }
 
     @GetMapping("/requests/get-requests-order-by-date-quarter/{numberOfQuarter}")
     public ResponseEntity<?> getRequestsOrderByQuarter(@PathVariable String numberOfQuarter, HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests-order-by-date-quarter/" + numberOfQuarter,
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-requests-order-by-date-quarter/" + numberOfQuarter;
+        return forwardWithPermissionCheck(url, request, null);
     }
 
     @GetMapping("/requests/get-requests-order-by-date-year")
     public ResponseEntity<?> getRequestsOrderByYear(HttpServletRequest request){
-        return forwardWithPermissionCheck(
-                "http://localhost:8087/requests/get-requests-order-by-date-year",
-                request,
-                null
-        );
+        String url = operationServiceUrl + "/requests/get-requests-order-by-date-year";
+        return forwardWithPermissionCheck(url, request, null);
     }
-
 
     // ==================== IDENTITY SERVICE ==========================
-
-    @PostMapping("/auth/registrate-user") //протестил
+    @PostMapping("/auth/registrate-user")
     public ResponseEntity<?> registrateUserAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardRequest(
-          "http://localhost:8080/auth/registrate-user",
-                request,
-                body,
-                null,
-                false
-        );
+        String url = identityServiceUrl + "/auth/registrate-user";
+        return forwardRequest(url, request, body, null, false);
     }
 
-    @PostMapping("/auth/login") //протестил
+    @PostMapping("/auth/login")
     public ResponseEntity<?> logInAndSendAuthCodeAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardRequest(
-            "http://localhost:8080/auth/login",
-                request,
-                body,
-                null,
-                false
-        );
+        String url = identityServiceUrl + "/auth/login";
+        return forwardRequest(url, request, body, null, false);
     }
 
-    @PostMapping("/auth/verify-code") //протестил
+    @PostMapping("/auth/verify-code")
     public ResponseEntity<?> verifyUserAsync(@RequestBody Object body, HttpServletRequest request){
-        return forwardRequest(
-                "http://localhost:8080/auth/verify-code",
-                request,
-                body,
-                null,
-                false
-        );
+        String url = identityServiceUrl + "/auth/verify-code";
+        return forwardRequest(url, request, body, null, false);
     }
-    // ===================
-
-
-
-
-
 
     // ==================== REFRESH TOKEN =============================
     @PostMapping("/refresh-token")
@@ -450,17 +307,11 @@ public class GatewayController {
 
             log.info("Refreshing token for: {}, {}", email, companyId);
 
-            // Прямо передаем то, что вернул AdminService
-            String url = String.format(
-                    "http://localhost:8082/permissions/get-new-token/%s/%s",
-                    companyId, email
-            );
-
+            String url = adminServiceUrl + "/permissions/get-new-token/" + companyId + "/" + email;
             ResponseEntity<String> response = restTemplate.exchange(
                     url, HttpMethod.POST, null, String.class
             );
 
-            // Возвращаем ТОЧНО ТО ЖЕ, что вернул AdminService
             return ResponseEntity
                     .status(response.getStatusCode())
                     .body(response.getBody());
@@ -471,12 +322,7 @@ public class GatewayController {
         }
     }
 
-
-    /// TODO : СДЕЛАТЬ ЗАПРОС, КОТОРЫЙ БУДЕТ ОБНОВЛЯТЬ ТОКЕН ПОСЛЕ ЕГО ИСТЧЕНИЯ
-
     // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
-
-
     private ResponseEntity<?> forwardWithPermissionCheck(String targetUrl,
                                                          HttpServletRequest request,
                                                          Object body) {
@@ -487,7 +333,6 @@ public class GatewayController {
                         .body("Missing authorization token".getBytes());
             }
 
-            // ПРОСТО извлекаем данные (даже из истекшего токена)
             String email = tokenService.extractUserEmail(token);
             String companyId = tokenService.extractCompanyId(token);
 
@@ -496,7 +341,6 @@ public class GatewayController {
                         .body("Invalid token data".getBytes());
             }
 
-            // Проверяем права
             PermissionCheckRequest permissionRequest = PermissionCheckRequest.builder()
                     .email(email)
                     .companyId(companyId)
@@ -513,32 +357,12 @@ public class GatewayController {
                         .body(("Access denied: " + permissionResponse.getReason()).getBytes());
             }
 
-            // Проксируем запрос
             return forwardRequest(targetUrl, request, body, permissionResponse, true);
 
         } catch (Exception e) {
             log.error("Gateway error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Gateway error: " + e.getMessage()).getBytes());
-        }
-    }
-
-
-    //без проверки токена - если методы не в компании или еще чето
-    private ResponseEntity<?> forwardWithoutToken(String targetUrl,
-                                                  HttpServletRequest request,
-                                                  Object body) {
-        try {
-            return forwardRequest(targetUrl, request, body, null, false);
-
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            // Пробрасываем HTTP ошибки от сервиса
-            throw e;
-
-        } catch (Exception e) {
-            log.error("Gateway error without token check: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Gateway error: " + e.getMessage());
         }
     }
 
@@ -565,15 +389,13 @@ public class GatewayController {
                     .body(response.getBody());
 
         } catch (HttpClientErrorException e) {
-            // 4xx ошибки от целевого сервиса
             log.warn("Target service returned {}: {}", e.getStatusCode(), e.getStatusText());
             return ResponseEntity
-                    .status(e.getStatusCode())           // ← Оригинальный статус
-                    .headers(e.getResponseHeaders())     // ← Оригинальные заголовки
-                    .body(e.getResponseBodyAsByteArray()); // ← Оригинальное тело
+                    .status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsByteArray());
 
         } catch (HttpServerErrorException e) {
-            // 5xx ошибки от целевого сервиса
             log.error("Target service error {}: {}", e.getStatusCode(), e.getStatusText());
             return ResponseEntity
                     .status(e.getStatusCode())
@@ -581,7 +403,6 @@ public class GatewayController {
                     .body(e.getResponseBodyAsByteArray());
 
         } catch (Exception e) {
-            // Ошибки Gateway (сеть, таймауты и т.д.)
             log.error("Gateway forwarding error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body("Gateway error: Service unavailable".getBytes());
@@ -592,8 +413,6 @@ public class GatewayController {
                                      PermissionResponse permissionResponse,
                                      boolean withToken) {
         HttpHeaders headers = new HttpHeaders();
-
-        // Копируем оригинальные заголовки
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
@@ -602,7 +421,6 @@ public class GatewayController {
             }
         }
 
-        // Если запрос с токеном и есть permissionResponse, добавляем права пользователя
         if (withToken && permissionResponse != null) {
             headers.add("X-User-Email", permissionResponse.getEmail());
             headers.add("X-Company-Id", permissionResponse.getCompanyId());
@@ -611,18 +429,14 @@ public class GatewayController {
                 headers.add("X-User-Permissions",
                         String.join(",", permissionResponse.getPermissions()));
             }
-
-            // Добавляем флаг, что запрос аутентифицирован
             headers.add("X-Authenticated", "true");
         } else {
-            // Для запросов без токена
             headers.add("X-Authenticated", "false");
         }
 
         return headers;
     }
 
-    //достаю параметры запросы
     private Map<String, String> extractRequestParams(HttpServletRequest request) {
         Map<String, String> params = new HashMap<>();
         request.getParameterMap().forEach((key, values) -> {
@@ -636,7 +450,6 @@ public class GatewayController {
     private HttpHeaders cleanHeaders(HttpHeaders originalHeaders) {
         HttpHeaders cleaned = new HttpHeaders();
         originalHeaders.forEach((key, values) -> {
-            // Убираем внутренние заголовки
             if (!key.toLowerCase().startsWith("x-")) {
                 cleaned.addAll(key, values);
             }
@@ -657,10 +470,3 @@ public class GatewayController {
                 headerName.equalsIgnoreCase("content-length");
     }
 }
-
-
-
-///"X-User-Email" - имейл юзера, если есть, только с токенами
-/// "X-Company-Id" - айди компании
-/// "X-User-Permissions" - права пользователя через запятую, только те права, которые есть
-/// "X-Authenticated" - публичный ли эндпоинт, точнее, вернулся ли он через гейтвей

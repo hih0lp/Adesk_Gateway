@@ -1,3 +1,14 @@
+# Упрощенная конфигурация Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    # base-path: /actuator - это значение по умолчанию, можно не указывать
+  endpoint:
+    health:
+      show-details: always
+
 server:
   port: 8085
 
@@ -5,7 +16,7 @@ spring:
   application:
     name: gateway-bff
 
-  ##убрал автоконфигурацию БД, а то ошибки ловлю, хз
+  # убрал автоконфигурацию БД, а то ошибки ловлю, хз
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
@@ -34,19 +45,18 @@ services:
   project:
     url: http://localhost:8084
 
-
-
 jwt:
   secret: v98Td7wS3j5uFU
 
 logging:
   level:
+    # Включи логи Actuator для отладки
+    org.springframework.boot.actuator: INFO
     Adesk_Gateway: DEBUG
     org.springframework.web: DEBUG
     org.springframework.web.client: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-
 
 resilience4j:
   circuitbreaker:
@@ -64,7 +74,6 @@ resilience4j:
           - org.springframework.web.client.HttpServerErrorException
         ignoreExceptions:
           - org.springframework.web.client.HttpClientErrorException
-
     instances:
       Gateway:  # Имя должно совпадать с аннотацией
         baseConfig: default
